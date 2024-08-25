@@ -6,5 +6,5 @@ export class Tag {
   id: number;
 
   @Property()
-  tagList: string;
+  tag: string;
 }
