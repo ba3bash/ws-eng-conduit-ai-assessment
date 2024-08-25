@@ -153,13 +153,17 @@ export class ArticleService {
       { id: userId },
       { populate: ['followers', 'favorites', 'articles'] },
     );
+
+    // Ensure dto.tagList is an array of strings (tags)
+    const tags = typeof dto.tagList === 'string' ? dto.tagList.split(' ') : dto.tagList;
+
     const article = new Article(user!, dto.title, dto.description, dto.body);
-    article.tagList.push(...dto.tagList);
+    article.tagList.push(...tags);
     user?.articles.add(article);
     await this.em.flush();
 
     return { article: article.toJSON(user!) };
-  }
+}
 
   async update(userId: number, slug: string, articleData: any): Promise<IArticleRO> {
     const user = await this.userRepository.findOne(
