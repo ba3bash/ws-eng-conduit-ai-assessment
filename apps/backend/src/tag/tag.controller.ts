@@ -1,16 +1,33 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { ITagsRO } from './tag.interface';
-import { TagService } from './tag.service';
+import { Injectable } from '@nestjs/common';
+import { EntityManager } from '@mikro-orm/core';
+import { UserRepository } from './user.repository';
+import { CreateArticleDto } from './dto/create-article.dto';
+import { Article } from './article.entity';
+import { TagsService } from './tags.service';
 
-@ApiBearerAuth()
-@ApiTags('tags')
-@Controller('tags')
-export class TagController {
-  constructor(private readonly tagService: TagService) {}
+@Injectable()
+export class ArticlesService {
+  constructor(
+    private readonly em: EntityManager,
+    private readonly userRepository: UserRepository,
+    private readonly tagsService: TagsService,
+  ) {}
 
-  @Get()
-  async findAll(): Promise<ITagsRO> {
-    return this.tagService.findAll();
+  async create(userId: number, dto: CreateArticleDto) {
+    const user = await this.userRepository.findOne(
+      { id: userId },
+      { populate: ['followers', 'favorites', 'articles'] },
+    );
+
+    // Ensure dto.tagList is an array of strings (tags)
+    const tags = typeof dto.tagList === 'string' ? dto.tagList.split(' ') : dto.tagList;
+
+    const article = new Article(user!, dto.title, dto.description, dto.body);
+    const tagEntities = await this.tagsService.createOrUpdateTags(tags);
+    article.tagList.add(...tagEntities);
+    user?.articles.add(article);
+    await this.em.flush();
+
+    return { article: article.toJSON(user!) };
   }
 }
