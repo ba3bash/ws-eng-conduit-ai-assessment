@@ -1,16 +1,26 @@
-import { inject } from '@angular/core';
-import { ActivatedRouteSnapshot, ResolveFn } from '@angular/router';
-import { Store } from '@ngrx/store';
-import { articleActions } from '@realworld/articles/data-access';
-import { of } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 
-export const articleEditResolver: ResolveFn<boolean> = (route: ActivatedRouteSnapshot) => {
-  const slug = route.params['slug'];
-  const store = inject(Store);
+@Component({
+  selector: 'cdt-tags-list',
+  standalone: true,
+  templateUrl: './tags-list.component.html',
+  styleUrls: ['./tags-list.component.css'],
+  imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class TagsListComponent {
+  private _tags: string[] = [];
 
-  if (slug) {
-    store.dispatch(articleActions.loadArticle({ slug }));
+  @Input()
+  set tags(value: string[]) {
+    // Ensure tags contain only full words
+    this._tags = value.filter(tag => tag.trim().length > 0 && !/\s/.test(tag));
   }
 
-  return of(true);
-};
+  get tags(): string[] {
+    return this._tags;
+  }
+
+  @Output() setListTag: EventEmitter<string> = new EventEmitter();
+}
